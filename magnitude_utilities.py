@@ -1,17 +1,17 @@
 """ 
-Functions that compute quantities dealing with magnitudes.  
+functions that compute quantities dealing with magnitudes.  
 """
 
 from __future__ import division, print_function
 import numpy as np
+from default_cosmo import default_cosmo  # define a default cosology for utilities
 
-__all__=['apparent_to_absolute_magnitude','absolute_to_apparent_magnitude',
-         'luminosity_to_absolute_magnitude','absolute_magnitude_to_luminosity',
-         'absolute_magnitude_lim','get_sun_mag']
-
-# define a default cosology for utilities
-from astropy.cosmology import FlatLambdaCDM
-default_cosmo = FlatLambdaCDM(H0=70, Om0=0.3, Ob0=0.05, Tcmb0=2.7255)
+__all__ = ( 'apparent_to_absolute_magnitude',
+            'absolute_to_apparent_magnitude',
+            'luminosity_to_absolute_magnitude',
+            'absolute_magnitude_to_luminosity',
+            'absolute_magnitude_lim', 'get_sun_mag', )
+__author__ = ('Duncan Campbell')
 
 
 def apparent_to_absolute_magnitude(m, d_L):
