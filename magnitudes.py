@@ -5,6 +5,8 @@ functions that compute quantities dealing with magnitudes.
 from __future__ import division, print_function
 import numpy as np
 from default_cosmo import default_cosmo  # define a default cosology for utilities
+from astropy.table import Table
+from scipy import interpolate
 
 __all__ = ( 'apparent_to_absolute_magnitude',
             'absolute_to_apparent_magnitude',
@@ -192,5 +194,62 @@ def get_sun_mag(filter,system):
             raise ValueError('Filter does not exist in this system.')
     else:
         raise ValueError('Filter system not included in this package.')
+
+
+def color_k_correct(z, galaxy_type='non-star-forming'):
+    """
+    interpolated color and k-corrections from table 1 in Eisenstein + (2001)
+
+    Parameters
+    ----------
+    z : array_like
+        array of redshifts
+
+    galaxy_type : string, optional
+        string indicating which galaxy type to return color and k-corrections
+        options are 'non-star-forming' or 'star-forming' 
+
+    Returns
+    -------
+    delta_g, u_minus_g, g_minus_r, r_minus_i
+        arrays of color an d k-corrections
+    """
+
+    z = np.atleast_1d(z)
+
+    tabulated_z = [0.00,0.02,0.04,0.06,0.08,0.10,0.12,0.14,0.16,0.18,0.20,0.22,0.24,0.26,0.28,
+                   0.30,0.32,0.34,0.36,0.38,0.40,0.42,0.44,0.46,0.48,0.50,0.52,0.54,0.56,0.58,0.60]
+
+    if galaxy_type == 'non-star-forming':
+        delta_g   = [0.000,0.039,0.081,0.128,0.182,0.249,0.322,0.402,0.487,0.575,0.665,0.752,0.836,
+                     0.912,0.980,1.056,1.146,1.233,1.285,1.322,1.350,1.382,1.433,1.484,1.535,1.584,1.634,1.692,1.747,1.808,1.881]
+        u_minus_g = [1.929,1.928,1.940,1.955,1.965,1.961,1.957,1.953,1.957,1.964,1.969,1.976,1.995,
+                     2.030,2.069,2.109,2.147,2.185,2.248,2.312,2.386,2.461,2.541,2.628,2.703,2.750,2.773,2.774,2.770,2.763,2.746]
+        g_minus_r = [0.775,0.810,0.843,0.881,0.924,0.977,1.036,1.102,1.173,1.249,1.328,1.400,1.475,
+                     1.533,1.583,1.642,1.719,1.778,1.800,1.805,1.792,1.767,1.755,1.737,1.715,1.684,1.657,1.642,1.629,1.626,1.637]
+        r_minus_i = [0.387,0.389,0.403,0.417,0.432,0.440,0.451,0.469,0.486,0.499,0.515,0.533,0.542,
+                     0.553,0.568,0.581,0.588,0.605,0.618,0.637,0.671,0.718,0.773,0.836,0.905,0.971,1.039,1.096,1.151,1.194,1.236]
+    if galaxy_type == 'star-forming':
+        delta_g   = [0.000,0.034,0.071,0.113,0.161,0.221,0.286,0.358,0.433,0.511,0.591,0.666,0.738,
+                     0.804,0.865,0.929,1.005,1.077,1.120,1.150,1.172,1.194,1.229,1.261,1.293,1.322,1.350,1.384,1.414,1.447,1.486]
+        u_minus_g = [1.758,1.754,1.757,1.756,1.748,1.727,1.704,1.677,1.655,1.631,1.603,1.575,1.552,
+                     1.535,1.517,1.494,1.459,1.421,1.402,1.383,1.369,1.352,1.327,1.300,1.267,1.227,1.181,1.127,1.075,1.020,0.959]
+        g_minus_r = [0.727,0.759,0.788,0.822,0.860,0.907,0.960,1.019,1.082,1.149,1.218,1.281,1.345,
+                     1.397,1.440,1.491,1.555,1.604,1.621,1.623,1.609,1.582,1.561,1.532,1.499,1.458,1.419,1.388,1.358,1.335,1.320]
+        r_minus_i = [0.374,0.375,0.388,0.401,0.415,0.421,0.432,0.448,0.464,0.475,0.489,0.505,0.513,
+                     0.522,0.535,0.545,0.551,0.565,0.575,0.591,0.621,0.662,0.711,0.768,0.831,0.891,0.953,1.005,1.055,1.095,1.134]
+
+    # put data into a table
+    t = Table([tabulated_z, delta_g, u_minus_g, g_minus_r, r_minus_i], 
+              names=('z', 'delta_g', 'u_minus_g', 'g_minus_r', 'r_minus_i'))
+
+    # build interpolation functions
+    f_1 = interpolate.InterpolatedUnivariateSpline(t['z'], t['delta_g'],   k=1)
+    f_2 = interpolate.InterpolatedUnivariateSpline(t['z'], t['u_minus_g'], k=1)
+    f_3 = interpolate.InterpolatedUnivariateSpline(t['z'], t['g_minus_r'], k=1)
+    f_4 = interpolate.InterpolatedUnivariateSpline(t['z'], t['r_minus_i'], k=1)
+
+    return f_1(z), f_2(z), f_3(z), f_4(z)
+
 
 
